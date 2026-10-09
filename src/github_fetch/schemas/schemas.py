@@ -1,6 +1,5 @@
 
-import datetime
-
+from datetime import datetime
 from pydantic import BaseModel
 
 class RepoSchema(BaseModel):
@@ -23,7 +22,7 @@ class MetricSchema(BaseModel):
     total_commits:int
     user_total_commits:int
     user_active_days:int
-    first_commit_date:datetime 
+    first_commit_date:datetime
     last_commit_date:datetime
     is_fork:bool
     commit_messages:list[str]
