@@ -5,7 +5,7 @@ from datetime import datetime
 import gradio as gr
 import httpx
 
-API_URL = os.getenv("API_URL", "http://localhost:8000")
+API_URL = os.getenv("API_URL", "https://github-repo-analyser-tmvi.onrender.com")
 
 CSS = """
 :root {
