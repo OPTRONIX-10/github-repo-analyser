@@ -1,8 +1,6 @@
+import httpx
 from github_fetch.schemas.schemas import RepoSchema, CommitSchema
-from fastapi import  HTTPException, Query
-
-
-
+from fastapi import HTTPException, Query
 
 BASE_URL = "https://api.github.com"
 
@@ -19,7 +17,18 @@ async def _get_pages(client, url, params=None, max_pages=10):
         if response.status_code == 404:
             raise HTTPException(404, "Not found")
         if response.status_code in (403, 429):
-            raise HTTPException(429, "GitHub rate limit exceeded or forbidden")
+            remaining = response.headers.get("X-RateLimit-Remaining")
+            reset = response.headers.get("X-RateLimit-Reset")
+            if remaining == "0":
+                raise HTTPException(
+                    status_code=429,
+                    detail=f"GitHub rate limit exceeded. Reset timestamp: {reset}",
+                )
+
+            raise HTTPException(
+                status_code=429,
+                detail="GitHub API request forbidden or rate-limited",
+            )
         response.raise_for_status()
 
         data = response.json()

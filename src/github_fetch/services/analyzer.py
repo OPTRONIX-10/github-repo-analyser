@@ -21,3 +21,5 @@ async def analyse_user_repo(client, username, top_n=10, max_concurrency=5):
     metrics = [r for r in results if isinstance(r, MetricSchema)]
     metrics.sort(key=lambda m: m.user_total_commits, reverse=True)
     return metrics[:top_n]
+
+

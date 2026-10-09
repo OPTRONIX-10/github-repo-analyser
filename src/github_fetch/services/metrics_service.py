@@ -1,7 +1,7 @@
 from github_fetch.schemas.schemas import MetricSchema, RepoSchema, CommitSchema
 
 
-def _sample_messages(commits: list[CommitSchema], groups: int = 5) -> list[str]:
+def _overview_messages(commits: list[CommitSchema], groups: int = 5) -> list[str]:
     if len(commits) <= groups:
         return [c.message for c in commits]
     size = len(commits) / groups
@@ -22,13 +22,14 @@ def calculate_metrics(repo: RepoSchema, commits: list[CommitSchema]) -> MetricSc
     return MetricSchema(
         repo_id=repo.id,
         repo_name=repo.name,
+        repo_description=repo.description,
         total_commits=len(commits),
         user_total_commits=len(user_commits),
         user_active_days=len({c.date.date() for c in user_commits}),
         first_commit_date=user_commits[0].date,
         last_commit_date=user_commits[-1].date,
         is_fork=repo.fork,
-        commit_messages=_sample_messages(user_commits),
+        commit_messages=_overview_messages(user_commits),
     )
     
 
