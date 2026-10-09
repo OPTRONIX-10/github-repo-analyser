@@ -1,82 +1,61 @@
-import httpx
-from github_fetch.schemas.schemas import RepoSchema, CommitSchema, MetricSchema
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, Query
-from typing import Annotated
+from github_fetch.schemas.schemas import RepoSchema, CommitSchema
+from fastapi import  HTTPException, Query
 
-@asynccontextmanager
-async def get_github_client(app: FastAPI):
-    app.state.http_client = httpx.AsyncClient(
-        timeout=30.0,
-        headers={"Accept": "application/vnd.github+json"},
+
+
+
+BASE_URL = "https://api.github.com"
+
+
+async def _get_pages(client, url, params=None, max_pages=10):
+    per_page = 100
+    items = []
+    for page in range(1, max_pages + 1):
+        response = await client.get(
+            url, params={**(params or {}), "page": page, "per_page": per_page}
+        )
+        if response.status_code == 409:  # empty repo
+            return []
+        if response.status_code == 404:
+            raise HTTPException(404, "Not found")
+        if response.status_code in (403, 429):
+            raise HTTPException(429, "GitHub rate limit exceeded or forbidden")
+        response.raise_for_status()
+
+        data = response.json()
+        items.extend(data)
+        if len(data) < per_page:
+            break
+    return items
+
+
+async def get_repos(client, username: str) -> list[RepoSchema]:
+    data = await _get_pages(
+        client,
+        f"{BASE_URL}/users/{username}/repos",
+        max_pages=5,
     )
-    yield
-    await app.state.http_client.aclose()
-
-app = FastAPI(lifespan=get_github_client)
-
-base_url = "https://api.github.com"
-
-@app.get("/repos", response_model=list[RepoSchema])
-async def fetch_repo(username: str = Annotated[str, Query(min_length=1)]):
-    client = app.state.http_client
-    repos = []
-    page = 1
-    per_page = 100
-
-    while True:
-        url = f"{base_url}/users/{username}/repos"
-        params = {"page": page, "per_page": per_page}
-        response = await client.get(url, params=params)
-
-        if response.status_code != 200:
-            raise HTTPException(status_code=response.status_code, detail=response.text)
-
-        data = response.json()
-        if not data:
-            break
-
-        for repo in data:
-            repos.append(RepoSchema(
-                id=repo["id"],
-                name=repo["name"],
-                owner_id=repo["owner"]["id"],
-                description=repo.get("description"),
-                commit_url=repo.get("commits_url", "").replace("{/sha}", ""),
-                fork=repo["fork"]
-            ))
-
-        page += 1
-    return repos
-
-@app.get("/commits", response_model = list[CommitSchema])
-async def fetch_commits(commit_url: str = Annotated[str, Query(min_length=1)]):
-    client = app.state.http_client
-    commits = []
-    page = 1
-    per_page = 100
-
-    while True:
-        params = {"page": page, "per_page": per_page}
-        response = await client.get(commit_url, params=params)
-
-        if response.status_code != 200:
-            raise HTTPException(status_code=response.status_code, detail=response.text)
-
-        data = response.json()
-        if not data:
-            break
-
-        for commit in data:
-            commits.append(CommitSchema(
-                id=commit["sha"],
-                author_id=commit["author"]["id"] if commit.get("author") else None,
-                date=commit["commit"]["author"]["date"],
-                message=commit["commit"]["message"]
-            ))
-
-        page += 1
-    return commits
+    return [
+        RepoSchema(
+            id=r["id"],
+            name=r["name"],
+            owner_id=r["owner"]["id"],
+            description=r.get("description"),
+            commit_url=r["commits_url"].replace("{/sha}", ""),
+            fork=r["fork"],
+        )
+        for r in data
+    ]
 
 
-
+async def get_commits(client, commit_url: str, max_pages=10) -> list[CommitSchema]:
+    data = await _get_pages(client, commit_url, max_pages=max_pages)
+    return [
+        CommitSchema(
+            id=c["sha"],
+            author_id=c["author"]["id"] if c.get("author") else None,
+            date=c["commit"]["author"]["date"],
+            message=c["commit"]["message"],
+        )
+        for c in data
+    ]
