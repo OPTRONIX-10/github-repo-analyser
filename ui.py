@@ -181,4 +181,9 @@ with gr.Blocks(theme=theme, css=CSS, title="GitHub Proof-of-Work Analyzer") as d
     username.submit(analyze, username, output)
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(
+    server_name="0.0.0.0",
+    server_port=int(os.environ.get("PORT", 7860)),
+    theme=theme,
+    css=CSS,
+)
