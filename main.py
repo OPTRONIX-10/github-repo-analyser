@@ -38,3 +38,8 @@ async def fetch_metrics(username: str = Annotated[str, Query(min_length=1)]):
     client = app.state.http_client
     metrics = await analyse_user_repo(client, username)
     return await add_metrics_and_sort(metrics)
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+
