@@ -5,7 +5,7 @@ from datetime import datetime
 import gradio as gr
 import httpx
 
-API_URL = os.getenv("API_URL", " https://github-repo-analyser-coab.onrender.com")
+API_URL = os.getenv("API_URL", "https://github-repo-analyser-coab.onrender.com")
 
 CSS = """
 :root {
