@@ -5,7 +5,7 @@ from datetime import datetime
 import gradio as gr
 import httpx
 
-API_URL = os.getenv("API_URL", " http://0.0.0.0:7860")
+API_URL = os.getenv("API_URL", " https://github-repo-analyser-coab.onrender.com")
 
 CSS = """
 :root {
@@ -182,8 +182,8 @@ with gr.Blocks(theme=theme, css=CSS, title="GitHub Proof-of-Work Analyzer") as d
 
 if __name__ == "__main__":
     demo.launch(
-    # server_name="0.0.0.0",
-    # server_port=int(os.environ.get("PORT", 7860)),
-    # theme=theme,
-    # css=CSS,
+    server_name="0.0.0.0",
+    server_port=int(os.environ.get("PORT", 7860)),
+    theme=theme,
+    css=CSS,
 )
